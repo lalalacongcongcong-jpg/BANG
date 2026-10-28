@@ -8,10 +8,18 @@ const js=fs.readFileSync(path.join(root,'dist/app.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
 const start=js.indexOf('function safeUrl('),end=js.indexOf('function validLink(');
 const safeUrl=vm.runInNewContext(js.slice(start,end)+';safeUrl',{URL});
+const linkName=vm.runInNewContext(js.slice(start,end)+';linkName',{URL});
+const validLink=vm.runInNewContext(js.slice(start,js.indexOf('const stored='))+';validLink',{URL});
 
 test('허용한 HTTPS 웹앱 주소만 연결한다',()=>{
   for(const url of ['https://example.org/','https://example.org/my-app/','https://script.google.com/macros/s/example/exec'])assert.equal(safeUrl(url),url);
   for(const url of ['javascript:alert(1)','data:text/html,<script>alert(1)</script>','file:///C:/test','http://example.org/','https://name:secret@example.org/','https://example.org/?token=secret','https://example.org/#secret','https://example.org/?student=001','not a url'])assert.throws(()=>safeUrl(url),url);
+});
+test('코드 모양 이름을 거부하고 저장된 비정상 링크를 표시하지 않는다',()=>{
+  assert.equal(linkName('  우리 반 일기장  '),'우리 반 일기장');
+  for(const name of ['<img src=x onerror=alert(1)>','<script>test</script>','','\u0000이름'])assert.throws(()=>linkName(name));
+  assert.equal(validLink({id:'test',name:'<img src=x onerror=alert(1)>',url:'https://example.org/',category:'journal'}),false);
+  assert.equal(validLink({id:'test',name:'우리 반 일기장',url:'https://example.org/',category:'journal'}),true);
 });
 test('외부 전송·인라인 코드·폼 전송을 브라우저 정책에서 제한한다',()=>{
   for(const rule of ["default-src 'none'","script-src 'self'","style-src 'self'","connect-src 'none'","form-action 'none'","base-uri 'none'","object-src 'none'"])assert.ok(html.includes(rule),rule);
