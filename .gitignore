@@ -1,0 +1,12 @@
+.openai/
+.sites-runtime/
+.sites-checkout/
+node_modules/
+test-results/
+.env
+.env.*
+*.sqlite
+*.db
+*.zip
+*.tar.gz
+*.log
